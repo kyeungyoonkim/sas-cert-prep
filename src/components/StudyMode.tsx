@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   getBankProblems,
   shuffleBank,
@@ -95,10 +95,16 @@ export function StudyMode({
   const { topics } = cert
   const bank = useMemo(() => getBankProblems(cert.id), [cert.id])
 
+  // Snapshot of answered questions taken when a session STARTS — kept in a ref so
+  // recording an answer mid-session does not re-run the init effect and reset the view.
+  const answeredRef = useRef(progress.answered)
+  answeredRef.current = progress.answered
+
   const sourcePool = useMemo(
-    () => buildStudyPool(session, bank, progress.answered),
+    () => buildStudyPool(session, bank, answeredRef.current),
     // Snapshot pool when session changes — NOT when each answer is recorded
-    [session, bank, progress.answered]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, bank]
   )
 
   const pathModule = useMemo(() => {
@@ -127,8 +133,9 @@ export function StudyMode({
         : S.modes.study.title)
 
   const beginSession = useCallback(
-    (size: number, pool: BankProblem[] = sourcePool) => {
-      let qs = shuffleBank([...pool])
+    (size: number, pool?: BankProblem[]) => {
+      const source = pool ?? buildStudyPool(session, bank, answeredRef.current)
+      let qs = shuffleBank([...source])
       if (size > 0 && qs.length > size) qs = qs.slice(0, size)
       setProblemList(qs)
       setSessionResults({})
@@ -137,9 +144,11 @@ export function StudyMode({
       setShowResult(false)
       setPhase('quiz')
     },
-    [sourcePool]
+    [session, bank]
   )
 
+  // Initialise (or re-initialise) the session ONLY when the session identity or
+  // certification changes — never when an answer is recorded.
   useEffect(() => {
     if (session.showConcept && session.moduleId) {
       setPhase('concept')
@@ -150,7 +159,7 @@ export function StudyMode({
       return
     }
     if (session.topic === 'wrong') {
-      const pool = buildStudyPool(session, bank, progress.answered)
+      const pool = buildStudyPool(session, bank, answeredRef.current)
       if (pool.length > 0) {
         beginSession(0, pool)
       } else {
@@ -164,7 +173,7 @@ export function StudyMode({
     setIndex(0)
     setSelected(null)
     setShowResult(false)
-  }, [session, cert.id, bank, progress.answered, beginSession])
+  }, [session, cert.id, bank, beginSession])
 
   const sessionCorrect = Object.values(sessionResults).filter(Boolean).length
   const sessionWrong = Object.values(sessionResults).filter((v) => !v).length
