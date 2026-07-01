@@ -213,6 +213,26 @@ export function useProgress(certId: CertId) {
     []
   )
 
+  const exportData = useCallback((): string => {
+    return JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), data: stored }, null, 2)
+  }, [stored])
+
+  const importData = useCallback((raw: string): boolean => {
+    try {
+      const parsed = JSON.parse(raw)
+      const incoming: Partial<StoredProgress> = parsed?.data ?? parsed
+      if (!incoming || typeof incoming !== 'object' || !incoming.byCert) return false
+      setStored({
+        ...defaultStored,
+        ...incoming,
+        byCert: { ...defaultStored.byCert, ...incoming.byCert },
+      })
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   return {
     progress,
     streak: stored.streak,
@@ -221,5 +241,7 @@ export function useProgress(certId: CertId) {
     toggleChecklist,
     recordExam,
     resetProgress,
+    exportData,
+    importData,
   }
 }

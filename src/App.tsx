@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react'
+import { useState, useEffect, useMemo, useCallback, type CSSProperties, type ChangeEvent } from 'react'
 import {
   getCert,
   CERT_ORDER,
@@ -87,8 +87,17 @@ export default function App() {
   const [studySession, setStudySession] = useState<StudySession>({ topic: 'all' })
   const [labCode, setLabCode] = useState<string | undefined>()
   const cert = getCert(certId)
-  const { progress, streak, recordAnswer, toggleBookmark, toggleChecklist, recordExam, resetProgress } =
-    useProgress(certId)
+  const {
+    progress,
+    streak,
+    recordAnswer,
+    toggleBookmark,
+    toggleChecklist,
+    recordExam,
+    resetProgress,
+    exportData,
+    importData,
+  } = useProgress(certId)
 
   const handleCertChange = (id: CertId) => {
     setCertId(id)
@@ -221,6 +230,8 @@ export default function App() {
             onOpenLab={() => { setLabCode(undefined); setView('codelab') }}
             onOpenCodeChallenges={() => setView('codechallenges')}
             onReset={() => resetProgress(certId)}
+            onExport={exportData}
+            onImport={importData}
           />
         )}
         {view === 'path' && (
@@ -263,6 +274,7 @@ export default function App() {
             progress={progress}
             onRecordAnswer={recordAnswer}
             onRecordExam={recordExam}
+            onStudyMissed={(ids, title) => startStudy({ questionIds: ids, title })}
             onBack={() => setView('dashboard')}
           />
         )}
@@ -325,6 +337,8 @@ function Dashboard({
   onOpenLab,
   onOpenCodeChallenges,
   onReset,
+  onExport,
+  onImport,
 }: {
   cert: CertData
   certId: CertId
@@ -338,6 +352,8 @@ function Dashboard({
   onOpenLab: () => void
   onOpenCodeChallenges: () => void
   onReset: () => void
+  onExport: () => string
+  onImport: (raw: string) => boolean
 }) {
   const { topics, examInfo, checklist } = cert
   const S = STRINGS
@@ -348,6 +364,30 @@ function Dashboard({
   )
   const daily = getDailyProgress(progress.dailyLog)
   const next = useMemo(() => getNextModule(certId, progress.answered), [certId, progress.answered])
+
+  const handleExport = () => {
+    const blob = new Blob([onExport()], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `sas-cert-progress-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const ok = onImport(String(reader.result))
+      alert(ok ? S.dashboard.importSuccess : S.dashboard.importError)
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   return (
     <>
@@ -407,6 +447,28 @@ function Dashboard({
           >
             {SP.continueBtn} →
           </button>
+        </div>
+      )}
+
+      {readiness.weakTopics.length > 0 && (
+        <div className="focus-panel">
+          <div className="focus-panel-head">
+            <h3>🎯 {S.dashboard.focusAreas}</h3>
+            <p>{S.dashboard.focusHint}</p>
+          </div>
+          <div className="focus-chips">
+            {readiness.weakTopics.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="focus-chip"
+                onClick={() => onStartStudy({ topic: t, title: topics[t]?.label ?? t })}
+              >
+                <span className="focus-chip-label">{topics[t]?.label ?? t}</span>
+                <span className="focus-chip-cta">{S.dashboard.focusStudy} →</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -525,15 +587,26 @@ function Dashboard({
         </>
       )}
 
-      <div style={{ marginTop: 32, textAlign: 'center' }}>
-        <button
-          className="btn btn-ghost"
-          onClick={() => {
-            if (confirm(`${S.dashboard.resetConfirm} ${cert.shortName}?`)) onReset()
-          }}
-        >
-          {S.dashboard.resetBtn} ({cert.shortName})
-        </button>
+      <div className="data-panel">
+        <div className="data-panel-head">
+          <h3>💾 {S.dashboard.dataManagement}</h3>
+          <p>{S.dashboard.dataHint}</p>
+        </div>
+        <div className="data-panel-actions">
+          <button className="btn btn-secondary" onClick={handleExport}>⬇ {S.dashboard.exportBtn}</button>
+          <label className="btn btn-secondary data-import-label">
+            ⬆ {S.dashboard.importBtn}
+            <input type="file" accept="application/json,.json" onChange={handleImport} hidden />
+          </label>
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              if (confirm(`${S.dashboard.resetConfirm} ${cert.shortName}?`)) onReset()
+            }}
+          >
+            {S.dashboard.resetBtn} ({cert.shortName})
+          </button>
+        </div>
       </div>
     </>
   )
@@ -593,6 +666,32 @@ function StudyMode({
     setSelected(null)
     setShowResult(false)
   }, [session, cert.id, bank, progress.answered])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!conceptDismissed) return
+      const target = e.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      const p = problemList[index]
+      if (!p) return
+      if (!showResult && ['1', '2', '3', '4'].includes(e.key)) {
+        const optIdx = Number(e.key) - 1
+        if (optIdx < p.options.length) {
+          setSelected(optIdx)
+          setShowResult(true)
+          onRecordAnswer(p.id, optIdx === p.correctIndex)
+        }
+      } else if (showResult && (e.key === 'Enter' || e.key === 'ArrowRight')) {
+        if (index < problemList.length - 1) {
+          setIndex(index + 1)
+          setSelected(null)
+          setShowResult(false)
+        }
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [problemList, index, showResult, conceptDismissed, onRecordAnswer])
 
   if (!conceptDismissed && pathModule) {
     const SP = STRINGS.studyPath
@@ -687,6 +786,7 @@ function StudyMode({
             🔀 {S.study.shuffle}
           </button>
         </p>
+        <p className="keyboard-hint">{S.study.keyboardHint}</p>
       </div>
 
       <div className="quiz-container">
@@ -766,12 +866,14 @@ function ExamMode({
   progress,
   onRecordAnswer,
   onRecordExam,
+  onStudyMissed,
   onBack,
 }: {
   cert: CertData
   progress: ReturnType<typeof useProgress>['progress']
   onRecordAnswer: (id: string, correct: boolean) => void
   onRecordExam: ReturnType<typeof useProgress>['recordExam']
+  onStudyMissed?: (ids: string[], title: string) => void
   onBack: () => void
 }) {
   const S = STRINGS
@@ -781,12 +883,14 @@ function ExamMode({
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [timeLeft, setTimeLeft] = useState(examInfo.minutes * 60)
+  const [showReview, setShowReview] = useState(false)
 
   const startExam = () => {
     setExamQuestions(buildExamSet(cert.id))
     setIndex(0)
     setAnswers({})
     setTimeLeft(examInfo.minutes * 60)
+    setShowReview(false)
     setPhase('exam')
   }
 
@@ -828,6 +932,26 @@ function ExamMode({
     const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000)
     return () => clearInterval(timer)
   }, [phase, timeLeft, finishExam])
+
+  useEffect(() => {
+    if (phase !== 'exam') return
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      const q = examQuestions[index]
+      if (!q) return
+      if (q.kind === 'mcq' && ['1', '2', '3', '4'].includes(e.key)) {
+        const optIdx = Number(e.key) - 1
+        if (optIdx < q.options.length) setAnswers((a) => ({ ...a, [q.id]: optIdx }))
+      } else if (e.key === 'ArrowRight') {
+        setIndex((i) => Math.min(examQuestions.length - 1, i + 1))
+      } else if (e.key === 'ArrowLeft') {
+        setIndex((i) => Math.max(0, i - 1))
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [phase, index, examQuestions])
 
   if (phase === 'intro') {
     return (
@@ -878,6 +1002,8 @@ function ExamMode({
     const correctCount = examQuestions.filter((q) => answers[q.id] === q.correctIndex).length
     const score = calcExamScore(correctCount, examQuestions.length, cert.id)
     const passed = score >= examInfo.passingScore
+    const missedIds = examQuestions.filter((q) => answers[q.id] !== q.correctIndex).map((q) => q.id)
+    const letters = ['A', 'B', 'C', 'D']
 
     return (
       <>
@@ -904,10 +1030,64 @@ function ExamMode({
               )
             })}
           </div>
-          <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={onBack}>
-            {S.study.back}
-          </button>
+          <div className="result-actions">
+            <button className="btn btn-secondary" onClick={() => setShowReview((v) => !v)}>
+              {showReview ? S.exam.hideReview : `🔍 ${S.exam.showReview}`}
+            </button>
+            {missedIds.length > 0 && onStudyMissed && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => onStudyMissed(missedIds, S.exam.reviewMissedOnly)}
+              >
+                🔄 {S.exam.reviewMissedOnly} ({missedIds.length})
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={startExam}>↻ {S.exam.retake}</button>
+            <button className="btn btn-primary" onClick={onBack}>{S.study.back}</button>
+          </div>
         </div>
+
+        {showReview && (
+          <div className="exam-review">
+            <div className="page-header">
+              <h2 style={{ fontSize: 20 }}>{S.exam.reviewTitle}</h2>
+            </div>
+            {examQuestions.map((q, i) => {
+              const picked = answers[q.id]
+              const isCorrect = picked === q.correctIndex
+              return (
+                <div key={q.id} className={`review-item ${isCorrect ? 'review-item--correct' : 'review-item--wrong'}`}>
+                  <div className="review-item-head">
+                    <span className={`review-mark ${isCorrect ? 'ok' : 'bad'}`}>{isCorrect ? '✓' : '✗'}</span>
+                    <span className="review-num">{i + 1}.</span>
+                    <span className="review-q">{q.question.split('\n\n')[0]}</span>
+                  </div>
+                  {q.code && (
+                    <div className="code-block review-code"><pre>{q.code}</pre></div>
+                  )}
+                  <div className="review-answers">
+                    <div className={`review-answer ${isCorrect ? 'ok' : 'bad'}`}>
+                      <span className="review-answer-label">{S.exam.yourAnswer}:</span>
+                      <span>
+                        {picked !== undefined ? `${letters[picked]}. ${q.options[picked]}` : S.exam.notAnswered}
+                      </span>
+                    </div>
+                    {!isCorrect && (
+                      <div className="review-answer ok">
+                        <span className="review-answer-label">{S.exam.correctAnswer}:</span>
+                        <span>{letters[q.correctIndex]}. {q.options[q.correctIndex]}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="review-explanation">
+                    <p>{q.explanation}</p>
+                    {q.explanationKo && <p className="explanation-ko-inline">{q.explanationKo}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </>
     )
   }

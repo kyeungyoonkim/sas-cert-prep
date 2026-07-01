@@ -55,6 +55,16 @@ export const STRINGS = {
     examHistory: 'Practice Exam History',
     resetConfirm: 'Reset all progress for',
     resetBtn: 'Reset progress',
+    focusAreas: 'Focus Areas',
+    focusHint: 'Topics where your coverage is under 50%. Drill these first.',
+    focusStudy: 'Drill this topic',
+    allStrong: 'No weak topics yet — keep going to unlock focus recommendations.',
+    dataManagement: 'Backup & Restore',
+    dataHint: 'Progress lives only in this browser. Export a backup or move it to another device.',
+    exportBtn: 'Export backup',
+    importBtn: 'Import backup',
+    importSuccess: 'Progress restored successfully.',
+    importError: 'Could not read that backup file.',
   },
 
   difficulty: {
@@ -92,6 +102,7 @@ export const STRINGS = {
     noMissed: 'No missed questions — great job!',
     noResults: 'No questions match your filters.',
     progress: 'Progress',
+    keyboardHint: 'Tip: press 1–4 to answer, Enter or → for next.',
   },
 
   exam: {
@@ -113,6 +124,14 @@ export const STRINGS = {
     correct: 'correct',
     results: 'Practice Exam Results',
     minutes: 'min',
+    showReview: 'Review answers',
+    hideReview: 'Hide review',
+    reviewTitle: 'Answer Review',
+    yourAnswer: 'Your answer',
+    correctAnswer: 'Correct answer',
+    notAnswered: 'Not answered',
+    retake: 'Retake exam',
+    reviewMissedOnly: 'Study missed from this exam',
   },
 
   bank: {
