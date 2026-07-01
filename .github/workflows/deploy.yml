@@ -27,6 +27,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run validate
       - run: npm run build
         env:
           # Repo name must match GitHub repo (e.g. github.com/you/sas-cert-prep → sas-cert-prep)

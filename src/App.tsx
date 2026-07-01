@@ -780,12 +780,14 @@ function ExamMode({
   const [examQuestions, setExamQuestions] = useState<BankProblem[]>([])
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
+  const [flagged, setFlagged] = useState<Record<string, boolean>>({})
   const [timeLeft, setTimeLeft] = useState(examInfo.minutes * 60)
 
   const startExam = () => {
     setExamQuestions(buildExamSet(cert.id))
     setIndex(0)
     setAnswers({})
+    setFlagged({})
     setTimeLeft(examInfo.minutes * 60)
     setPhase('exam')
   }
@@ -878,6 +880,8 @@ function ExamMode({
     const correctCount = examQuestions.filter((q) => answers[q.id] === q.correctIndex).length
     const score = calcExamScore(correctCount, examQuestions.length, cert.id)
     const passed = score >= examInfo.passingScore
+    const reviewQuestions = examQuestions.filter((q) => flagged[q.id] || answers[q.id] !== q.correctIndex)
+    const letters = ['A', 'B', 'C', 'D']
 
     return (
       <>
@@ -904,6 +908,43 @@ function ExamMode({
               )
             })}
           </div>
+          {reviewQuestions.length > 0 && (
+            <div className="exam-review-list">
+              <h3>{S.exam.reviewTitle}</h3>
+              <p>{S.exam.reviewHint}</p>
+              {reviewQuestions.map((q) => {
+                const selected = answers[q.id]
+                const isCorrect = selected === q.correctIndex
+                return (
+                  <details key={q.id} className={`exam-review-item ${isCorrect ? 'correct' : 'wrong'}`}>
+                    <summary>
+                      <span>{flagged[q.id] ? '🚩 ' : ''}{q.title}</span>
+                      <span>{isCorrect ? S.exam.reviewCorrect : S.exam.reviewMissed}</span>
+                    </summary>
+                    <div className="exam-review-body">
+                      <p>{q.question}</p>
+                      <div className="exam-review-answers">
+                        <span>
+                          {S.exam.yourAnswer}: <strong>{selected === undefined ? S.exam.unanswered : `${letters[selected]}. ${q.options[selected]}`}</strong>
+                        </span>
+                        <span>
+                          {S.exam.correctAnswer}: <strong>{letters[q.correctIndex]}. {q.options[q.correctIndex]}</strong>
+                        </span>
+                      </div>
+                      <div className="explanation">
+                        <p>{q.explanation}</p>
+                        {q.explanationKo && (
+                          <div className="explanation-ko">
+                            <p>{q.explanationKo}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                )
+              })}
+            </div>
+          )}
           <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={onBack}>
             {S.study.back}
           </button>
@@ -913,6 +954,7 @@ function ExamMode({
   }
 
   const q = examQuestions[index]
+  const isFlagged = flagged[q.id] ?? false
 
   return (
     <>
@@ -922,7 +964,16 @@ function ExamMode({
           {q.kind === 'code' && <span className="kind-badge kind-badge--code">▶ Run</span>}
           <span>{index + 1} / {examQuestions.length}</span>
         </div>
-        <div className={`timer ${timeLeft < 300 ? 'warning' : ''}`}>⏱ {formatTime(timeLeft)}</div>
+        <div className="exam-tools">
+          <button
+            type="button"
+            className={`btn btn-ghost flag-btn ${isFlagged ? 'active' : ''}`}
+            onClick={() => setFlagged((prev) => ({ ...prev, [q.id]: !prev[q.id] }))}
+          >
+            🚩 {isFlagged ? S.exam.flagged : S.exam.flag}
+          </button>
+          <div className={`timer ${timeLeft < 300 ? 'warning' : ''}`}>⏱ {formatTime(timeLeft)}</div>
+        </div>
       </div>
 
       <div className="question-nav">
@@ -933,7 +984,7 @@ function ExamMode({
               key={qq.id}
               className={`q-dot ${i === index ? 'current' : ''} ${
                 answered ? 'answered-correct' : ''
-              } ${qq.kind === 'code' ? 'q-dot--code' : ''}`}
+              } ${flagged[qq.id] ? 'q-dot--flagged' : ''} ${qq.kind === 'code' ? 'q-dot--code' : ''}`}
               onClick={() => setIndex(i)}
               title={qq.kind === 'code' ? 'Run code' : undefined}
             >
@@ -1086,7 +1137,7 @@ function QuestionCard({
 /* ─── Flashcards ─── */
 function FlashcardMode({ cert, onBack }: { cert: CertData; onBack: () => void }) {
   const S = STRINGS
-  const cards = useMemo(() => shuffle(cert.questions), [cert.id])
+  const cards = useMemo(() => shuffle(getBankProblems(cert.id)), [cert.id])
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const card = cards[index]
@@ -1101,11 +1152,12 @@ function FlashcardMode({ cert, onBack }: { cert: CertData; onBack: () => void })
       <div className={`flashcard ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(!flipped)}>
         <div className="flashcard-inner">
           <div className="flashcard-front">
-            <h3>{S.study.question}</h3>
+            <h3>{S.study.question} {card.kind === 'code' && <span className="kind-badge kind-badge--code">{S.codeChallenges.badge}</span>}</h3>
+            {card.title && <strong className="flashcard-title">{card.title}</strong>}
             <p>{card.question}</p>
-            {card.code && (
+            {(card.code || card.starterCode) && (
               <div className="code-block" style={{ marginTop: 12 }}>
-                <pre style={{ fontSize: 11 }}>{card.code}</pre>
+                <pre style={{ fontSize: 11 }}>{card.code ?? card.starterCode}</pre>
               </div>
             )}
             <div className="flashcard-hint">{S.study.tapReveal}</div>
@@ -1189,7 +1241,10 @@ function BookmarkView({
   onBack: () => void
 }) {
   const S = STRINGS
-  const bookmarkedQs = cert.questions.filter((q) => progress.bookmarked.includes(q.id))
+  const bookmarkedQs = useMemo(
+    () => getBankProblems(cert.id).filter((q) => progress.bookmarked.includes(q.id)),
+    [cert.id, progress.bookmarked]
+  )
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
@@ -1218,22 +1273,66 @@ function BookmarkView({
         <p>{index + 1} / {bookmarkedQs.length}</p>
       </div>
       <div className="quiz-container">
-        <QuestionCard
-          cert={cert}
-          question={q}
-          selected={selected}
-          showResult={showResult}
-          onSelect={(optIdx) => {
-            setSelected(optIdx)
-            setShowResult(true)
-            onRecordAnswer(q.id, optIdx === q.correctIndex)
-          }}
-          isBookmarked
-          onToggleBookmark={() => {
-            onToggleBookmark(q.id)
-            if (index >= bookmarkedQs.length - 1) setIndex(Math.max(0, index - 1))
-          }}
-        />
+        {q.kind === 'code' ? (
+          <div className="question-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className={`badge ${q.difficulty}`}>{diffLabel(q.difficulty)}</span>
+                <span className="bank-id">{q.id}</span>
+                <span className="kind-badge kind-badge--code">▶ Run</span>
+              </div>
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  onToggleBookmark(q.id)
+                  if (index >= bookmarkedQs.length - 1) setIndex(Math.max(0, index - 1))
+                }}
+              >
+                ⭐
+              </button>
+            </div>
+            <div className="question-text">{q.question}</div>
+            <CodeProblemPanel
+              problem={q}
+              selected={selected}
+              showResult={showResult}
+              onSelect={(optIdx) => {
+                setSelected(optIdx)
+                setShowResult(true)
+                onRecordAnswer(q.id, optIdx === q.correctIndex)
+              }}
+            />
+            {showResult && (
+              <div className="explanation">
+                <h4>💡 {S.study.explanation}</h4>
+                <p>{q.explanation}</p>
+                {q.explanationKo && (
+                  <div className="explanation-ko">
+                    <h5>{S.study.explanationKo}</h5>
+                    <p>{q.explanationKo}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <QuestionCard
+            cert={cert}
+            question={bankToQuestion(q)}
+            selected={selected}
+            showResult={showResult}
+            onSelect={(optIdx) => {
+              setSelected(optIdx)
+              setShowResult(true)
+              onRecordAnswer(q.id, optIdx === q.correctIndex)
+            }}
+            isBookmarked
+            onToggleBookmark={() => {
+              onToggleBookmark(q.id)
+              if (index >= bookmarkedQs.length - 1) setIndex(Math.max(0, index - 1))
+            }}
+          />
+        )}
         <div className="quiz-actions">
           <button className="btn btn-secondary" onClick={onBack}>← {S.study.back}</button>
           {index < bookmarkedQs.length - 1 && showResult && (

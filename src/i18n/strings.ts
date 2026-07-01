@@ -113,6 +113,15 @@ export const STRINGS = {
     correct: 'correct',
     results: 'Practice Exam Results',
     minutes: 'min',
+    flag: 'Flag',
+    flagged: 'Flagged',
+    reviewTitle: 'Review missed & flagged',
+    reviewHint: 'Open each item to compare your answer with the correct answer and explanation.',
+    reviewCorrect: 'Correct',
+    reviewMissed: 'Missed',
+    yourAnswer: 'Your answer',
+    correctAnswer: 'Correct answer',
+    unanswered: 'Unanswered',
   },
 
   bank: {
