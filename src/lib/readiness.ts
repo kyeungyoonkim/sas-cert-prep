@@ -71,7 +71,8 @@ export function calculateReadiness(
   })
 
   const weakTopics = Object.entries(byTopic)
-    .filter(([, v]) => v.answered > 0 && v.answered / v.total < 0.5)
+    .filter(([, v]) => v.answered >= 3 && v.correct / v.answered < 0.6)
+    .sort(([, a], [, b]) => a.correct / a.answered - b.correct / b.answered)
     .map(([t]) => t)
 
   let label: string

@@ -387,6 +387,24 @@ function Dashboard({
         </button>
       </div>
 
+      {readiness.weakTopics.length > 0 && (
+        <div className="weak-topics-banner">
+          <span className="weak-topics-label">⚠️ {S.dashboard.weakTopics}</span>
+          <div className="weak-topics-chips">
+            {readiness.weakTopics.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="weak-topic-chip"
+                onClick={() => onStartStudy({ topic: t, title: topics[t]?.label })}
+              >
+                {topics[t]?.label ?? t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {next && (
         <div className="coach-continue">
           <div>

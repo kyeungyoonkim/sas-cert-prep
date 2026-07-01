@@ -52,6 +52,7 @@ export const STRINGS = {
     quickStart: 'Quick Start',
     topicProgress: 'Progress by Topic',
     topicHint: 'Focus on weaker areas weighted heavily on the exam.',
+    weakTopics: 'Weak topics — under 60% accuracy',
     examHistory: 'Practice Exam History',
     resetConfirm: 'Reset all progress for',
     resetBtn: 'Reset progress',

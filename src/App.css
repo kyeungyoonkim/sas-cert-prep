@@ -1930,6 +1930,48 @@
   font-size: 0.8rem;
 }
 
+.weak-topics-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.weak-topics-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #b45309;
+  white-space: nowrap;
+}
+
+.weak-topics-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weak-topic-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid #d97706;
+  background: #fff;
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.weak-topic-chip:hover {
+  background: #d97706;
+  color: #fff;
+}
+
 .coach-continue {
   display: flex;
   justify-content: space-between;
