@@ -1,17 +1,25 @@
 import { useState, useCallback, useEffect } from 'react'
 import { runSasCode } from '../lib/sasSimulator'
 import type { CodeChallenge } from '../data/codeChallenges'
+import type { useProgress } from '../hooks/useProgress'
 import { STRINGS } from '../i18n/strings'
+import { AnswerReveal } from './AnswerReveal'
 
 export function ChallengePlayer({
   challenge,
   challenges,
+  progress,
+  onRecordAnswer,
+  onToggleBookmark,
   onSelect,
   onBack,
   onExit,
 }: {
   challenge: CodeChallenge
   challenges: CodeChallenge[]
+  progress: ReturnType<typeof useProgress>['progress']
+  onRecordAnswer: (id: string, correct: boolean) => void
+  onToggleBookmark: (id: string) => void
   onSelect: (id: string) => void
   onBack: () => void
   onExit?: () => void
@@ -57,18 +65,36 @@ export function ChallengePlayer({
     if (!hasRun || showResult) return
     setSelected(i)
     setShowResult(true)
+    onRecordAnswer(challenge.id, i === challenge.correctIndex)
+  }
+
+  const handleRetry = () => {
+    setSelected(null)
+    setShowResult(false)
   }
 
   const handleNext = () => {
     if (idx < challenges.length - 1) onSelect(challenges[idx + 1].id)
   }
 
+  const isCorrect = selected !== null && selected === challenge.correctIndex
+  const isBookmarked = progress.bookmarked.includes(challenge.id)
   const letters = ['A', 'B', 'C', 'D']
 
   return (
     <>
       <div className="page-header">
-        <div className="mode-banner mode-banner--code">{S.badge}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div className="mode-banner mode-banner--code">{S.badge}</div>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => onToggleBookmark(challenge.id)}
+            title="Bookmark"
+          >
+            {isBookmarked ? '⭐' : '☆'}
+          </button>
+        </div>
         <h2>{challenge.title}</h2>
         <p>{challenge.instruction}</p>
         {challenge.hint && <p className="challenge-hint">💡 Hint: {challenge.hint}</p>}
@@ -156,6 +182,14 @@ export function ChallengePlayer({
         </div>
 
         {showResult && (
+          <AnswerReveal
+            options={challenge.options}
+            correctIndex={challenge.correctIndex}
+            selected={selected}
+          />
+        )}
+
+        {showResult && (
           <div className="explanation">
             <h4>💡 {STRINGS.study.explanation}</h4>
             <p>{challenge.explanation}</p>
@@ -175,12 +209,21 @@ export function ChallengePlayer({
 
       <div className="quiz-actions">
         <button type="button" className="btn btn-secondary" onClick={onBack}>← {S.allChallenges}</button>
-        {showResult && idx < challenges.length - 1 && (
-          <button type="button" className="btn btn-primary" onClick={handleNext}>{S.nextChallenge} →</button>
-        )}
-        {showResult && idx === challenges.length - 1 && onExit && (
-          <button type="button" className="btn btn-primary" onClick={onExit}>{STRINGS.study.done}</button>
-        )}
+        <div className="quiz-actions-right">
+          {showResult && !isCorrect && (
+            <button type="button" className="btn btn-secondary" onClick={handleRetry}>
+              🔄 {STRINGS.study.retry}
+            </button>
+          )}
+          {showResult && idx < challenges.length - 1 && (
+            <button type="button" className="btn btn-primary" onClick={handleNext}>
+              {isCorrect ? `${S.nextChallenge} →` : STRINGS.study.continueAfterReview}
+            </button>
+          )}
+          {showResult && idx === challenges.length - 1 && onExit && (
+            <button type="button" className="btn btn-primary" onClick={onExit}>{STRINGS.study.done}</button>
+          )}
+        </div>
       </div>
     </>
   )

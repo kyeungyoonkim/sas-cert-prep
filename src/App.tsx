@@ -274,7 +274,13 @@ export default function App() {
           <CodeLab initialCode={labCode} onBack={() => setView('dashboard')} />
         )}
         {view === 'codechallenges' && (
-          <CodeChallenges certId={certId} onBack={() => setView('dashboard')} />
+          <CodeChallenges
+            certId={certId}
+            progress={progress}
+            onRecordAnswer={recordAnswer}
+            onToggleBookmark={toggleBookmark}
+            onBack={() => setView('dashboard')}
+          />
         )}
         {view === 'flashcard' && <FlashcardMode cert={cert} onBack={() => setView('dashboard')} />}
         {view === 'checklist' && (
@@ -742,7 +748,7 @@ function ExamMode({
             <button
               key={qq.id}
               className={`q-dot ${i === index ? 'current' : ''} ${
-                answered ? 'answered-correct' : ''
+                answered ? 'answered' : ''
               } ${qq.kind === 'code' ? 'q-dot--code' : ''}`}
               onClick={() => setIndex(i)}
               title={qq.kind === 'code' ? 'Run code' : undefined}
@@ -803,6 +809,20 @@ function FlashcardMode({ cert, onBack }: { cert: CertData; onBack: () => void })
   const [flipped, setFlipped] = useState(false)
   const card = cards[index]
   const letters = ['A', 'B', 'C', 'D']
+
+  if (!card) {
+    return (
+      <>
+        <div className="page-header"><h2>{S.modes.flashcard.title}</h2></div>
+        <div className="empty-state">
+          <p>{S.study.noResults}</p>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={onBack}>
+            {S.study.back}
+          </button>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
