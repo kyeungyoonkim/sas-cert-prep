@@ -375,6 +375,12 @@ function Dashboard({
         </div>
         <div className="coach-hero-body">
           <p className="coach-recommendation">{readiness.recommendation}</p>
+          <div className="readiness-bars readiness-bars--compact">
+            <DashboardReadinessBar label={SP.coverage} value={readiness.breakdown.coverage} />
+            <DashboardReadinessBar label={SP.accuracy} value={readiness.breakdown.accuracy} />
+            <DashboardReadinessBar label={SP.modules} value={readiness.breakdown.modules} />
+            <DashboardReadinessBar label={SP.examSim} value={readiness.breakdown.examSim} />
+          </div>
           <div className="daily-goal daily-goal--inline">
             <span>{SP.dailyGoal}: <strong>{daily.today}/{daily.goal}</strong></span>
             <div className="daily-goal-bar">
@@ -407,6 +413,25 @@ function Dashboard({
           >
             {SP.continueBtn} →
           </button>
+        </div>
+      )}
+
+      {readiness.weakTopics.length > 0 && (
+        <div className="weak-topics-panel">
+          <h3>{SP.weakTopics}</h3>
+          <p className="weak-topics-hint">{SP.weakTopicsHint}</p>
+          <div className="weak-topics-chips">
+            {readiness.weakTopics.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                className="weak-topic-chip"
+                onClick={() => onStartStudy({ topic, title: topics[topic]?.label })}
+              >
+                {topics[topic]?.label ?? topic}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -536,6 +561,19 @@ function Dashboard({
         </button>
       </div>
     </>
+  )
+}
+
+/* ─── Dashboard helpers ─── */
+function DashboardReadinessBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="readiness-bar-row readiness-bar-row--compact">
+      <span className="readiness-bar-label">{label}</span>
+      <div className="readiness-bar-track">
+        <div className="readiness-bar-fill" style={{ width: `${value}%` }} />
+      </div>
+      <span className="readiness-bar-pct">{value}%</span>
+    </div>
   )
 }
 
@@ -1086,7 +1124,10 @@ function QuestionCard({
 /* ─── Flashcards ─── */
 function FlashcardMode({ cert, onBack }: { cert: CertData; onBack: () => void }) {
   const S = STRINGS
-  const cards = useMemo(() => shuffle(cert.questions), [cert.id])
+  const cards = useMemo(
+    () => shuffle(getBankProblems(cert.id).filter((p) => p.kind === 'mcq').map(bankToQuestion)),
+    [cert.id]
+  )
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const card = cards[index]
@@ -1189,12 +1230,15 @@ function BookmarkView({
   onBack: () => void
 }) {
   const S = STRINGS
-  const bookmarkedQs = cert.questions.filter((q) => progress.bookmarked.includes(q.id))
+  const bookmarkedProblems = useMemo(
+    () => getBankProblems(cert.id).filter((p) => progress.bookmarked.includes(p.id)),
+    [cert.id, progress.bookmarked]
+  )
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
 
-  if (bookmarkedQs.length === 0) {
+  if (bookmarkedProblems.length === 0) {
     return (
       <>
         <div className="page-header"><h2>{S.bookmarks.title}</h2></div>
@@ -1209,34 +1253,74 @@ function BookmarkView({
     )
   }
 
-  const q = bookmarkedQs[index]
+  const p = bookmarkedProblems[index]
 
   return (
     <>
       <div className="page-header">
         <h2>{S.bookmarks.title}</h2>
-        <p>{index + 1} / {bookmarkedQs.length}</p>
+        <p>{index + 1} / {bookmarkedProblems.length}</p>
       </div>
       <div className="quiz-container">
-        <QuestionCard
-          cert={cert}
-          question={q}
-          selected={selected}
-          showResult={showResult}
-          onSelect={(optIdx) => {
-            setSelected(optIdx)
-            setShowResult(true)
-            onRecordAnswer(q.id, optIdx === q.correctIndex)
-          }}
-          isBookmarked
-          onToggleBookmark={() => {
-            onToggleBookmark(q.id)
-            if (index >= bookmarkedQs.length - 1) setIndex(Math.max(0, index - 1))
-          }}
-        />
+        {p.kind === 'code' ? (
+          <div className="question-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className={`badge ${p.difficulty}`}>{diffLabel(p.difficulty)}</span>
+                <span className="kind-badge kind-badge--code">▶ Run</span>
+              </div>
+              <button className="btn btn-ghost" onClick={() => {
+                onToggleBookmark(p.id)
+                if (index >= bookmarkedProblems.length - 1) setIndex(Math.max(0, index - 1))
+              }}>
+                ⭐
+              </button>
+            </div>
+            <div className="question-text">{p.question}</div>
+            <CodeProblemPanel
+              problem={p}
+              selected={selected}
+              showResult={showResult}
+              onSelect={(optIdx) => {
+                setSelected(optIdx)
+                setShowResult(true)
+                onRecordAnswer(p.id, optIdx === p.correctIndex)
+              }}
+            />
+            {showResult && (
+              <div className="explanation">
+                <h4>💡 {S.study.explanation}</h4>
+                <p>{p.explanation}</p>
+                {p.explanationKo && (
+                  <div className="explanation-ko">
+                    <h5>{S.study.explanationKo}</h5>
+                    <p>{p.explanationKo}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <QuestionCard
+            cert={cert}
+            question={bankToQuestion(p)}
+            selected={selected}
+            showResult={showResult}
+            onSelect={(optIdx) => {
+              setSelected(optIdx)
+              setShowResult(true)
+              onRecordAnswer(p.id, optIdx === p.correctIndex)
+            }}
+            isBookmarked
+            onToggleBookmark={() => {
+              onToggleBookmark(p.id)
+              if (index >= bookmarkedProblems.length - 1) setIndex(Math.max(0, index - 1))
+            }}
+          />
+        )}
         <div className="quiz-actions">
           <button className="btn btn-secondary" onClick={onBack}>← {S.study.back}</button>
-          {index < bookmarkedQs.length - 1 && showResult && (
+          {index < bookmarkedProblems.length - 1 && showResult && (
             <button
               className="btn btn-primary"
               onClick={() => { setIndex(index + 1); setSelected(null); setShowResult(false) }}

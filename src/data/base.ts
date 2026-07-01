@@ -5,6 +5,8 @@ import { PREMIUM_BASE } from './extra/premium-base'
 import { EXAM_GRADE_BASE } from './extra/exam-grade-base'
 import { BASE_UPGRADES } from './upgrade/base-upgrades'
 import { applyMcqUpgrades } from '../lib/mergeUpgrades'
+import { applyKoPatches } from '../lib/applyKoPatches'
+import { KO_PATCHES_BASE } from './locale/ko-patches-base'
 
 export type BaseTopic =
   | 'data-structures'
@@ -1066,9 +1068,12 @@ export const BASE_CERT: CertData = {
   subtitle: 'SAS 9.4 · A00-231',
   color: '#0d6e6e',
   topics: TOPICS,
-  questions: applyMcqUpgrades(
-    [...QUESTIONS, ...BASE_EXTRA, ...TRICKY_BASE, ...PREMIUM_BASE, ...EXAM_GRADE_BASE],
-    BASE_UPGRADES
+  questions: applyKoPatches(
+    applyMcqUpgrades(
+      [...QUESTIONS, ...BASE_EXTRA, ...TRICKY_BASE, ...PREMIUM_BASE, ...EXAM_GRADE_BASE],
+      BASE_UPGRADES
+    ),
+    KO_PATCHES_BASE
   ),
   examInfo: EXAM_INFO,
   checklist: STUDY_CHECKLIST,

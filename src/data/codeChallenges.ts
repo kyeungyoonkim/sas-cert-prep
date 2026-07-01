@@ -4,6 +4,8 @@ import { CODE_CLINICAL_EXTRA } from './extra/code-clinical'
 import { CODE_ADVANCED_EXTRA } from './extra/code-advanced'
 import { CODE_UPGRADES } from './upgrade/code-upgrades'
 import { applyCodeUpgrades } from '../lib/mergeUpgrades'
+import { applyKoPatches } from '../lib/applyKoPatches'
+import { KO_PATCHES } from './locale'
 
 export interface CodeChallenge {
   id: string
@@ -957,7 +959,10 @@ run;`,
   ...CODE_ADVANCED_EXTRA,
 ]
 
-export const CODE_CHALLENGES = applyCodeUpgrades(RAW_CODE_CHALLENGES, CODE_UPGRADES)
+export const CODE_CHALLENGES = applyKoPatches(
+  applyCodeUpgrades(RAW_CODE_CHALLENGES, CODE_UPGRADES),
+  KO_PATCHES
+)
 
 export function getChallengesForCert(cert: CertId): CodeChallenge[] {
   return CODE_CHALLENGES.filter((c) => c.cert === cert)

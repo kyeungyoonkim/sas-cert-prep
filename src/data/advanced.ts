@@ -3,6 +3,8 @@ import { ADVANCED_EXTRA } from './extra/advanced'
 import { EXAM_GRADE_ADVANCED } from './extra/exam-grade-advanced'
 import { ADVANCED_UPGRADES } from './upgrade/advanced-upgrades'
 import { applyMcqUpgrades } from '../lib/mergeUpgrades'
+import { applyKoPatches } from '../lib/applyKoPatches'
+import { KO_PATCHES_ADVANCED } from './locale/ko-patches-advanced'
 
 export type AdvancedTopic = 'sql' | 'macro' | 'advanced-techniques'
 
@@ -520,9 +522,12 @@ export const ADVANCED_CERT: CertData = {
   subtitle: 'SAS 9.4 · A00-232',
   color: '#5b4a9e',
   topics: TOPICS,
-  questions: applyMcqUpgrades(
-    [...QUESTIONS, ...ADVANCED_EXTRA, ...EXAM_GRADE_ADVANCED],
-    ADVANCED_UPGRADES
+  questions: applyKoPatches(
+    applyMcqUpgrades(
+      [...QUESTIONS, ...ADVANCED_EXTRA, ...EXAM_GRADE_ADVANCED],
+      ADVANCED_UPGRADES
+    ),
+    KO_PATCHES_ADVANCED
   ),
   examInfo: EXAM_INFO,
   checklist: STUDY_CHECKLIST,

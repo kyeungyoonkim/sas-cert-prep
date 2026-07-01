@@ -221,6 +221,8 @@ export const STRINGS = {
       'Avoid third-party "exam dumps" — they violate SAS exam integrity policy and are often wrong.',
     conceptBanner: 'Before you practice — review these concepts',
     startQuiz: 'Start quiz',
+    weakTopics: 'Needs review',
+    weakTopicsHint: 'Topics where less than half of questions are attempted.',
   },
 } as const
 

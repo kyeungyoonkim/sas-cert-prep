@@ -3,6 +3,8 @@ import { CLINICAL_EXTRA } from './extra/clinical'
 import { EXAM_GRADE_CLINICAL } from './extra/exam-grade-clinical'
 import { CLINICAL_UPGRADES } from './upgrade/clinical-upgrades'
 import { applyMcqUpgrades } from '../lib/mergeUpgrades'
+import { applyKoPatches } from '../lib/applyKoPatches'
+import { KO_PATCHES_CLINICAL } from './locale/ko-patches-clinical'
 
 export type ClinicalTopic =
   | 'clinical-process'
@@ -566,9 +568,12 @@ export const CLINICAL_CERT: CertData = {
   subtitle: 'SAS 9.4 · A00-282',
   color: '#2d7a4f',
   topics: TOPICS,
-  questions: applyMcqUpgrades(
-    [...QUESTIONS, ...CLINICAL_EXTRA, ...EXAM_GRADE_CLINICAL],
-    CLINICAL_UPGRADES
+  questions: applyKoPatches(
+    applyMcqUpgrades(
+      [...QUESTIONS, ...CLINICAL_EXTRA, ...EXAM_GRADE_CLINICAL],
+      CLINICAL_UPGRADES
+    ),
+    KO_PATCHES_CLINICAL
   ),
   examInfo: EXAM_INFO,
   checklist: STUDY_CHECKLIST,
