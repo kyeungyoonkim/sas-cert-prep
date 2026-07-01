@@ -3,6 +3,7 @@ import { BASE_EXTRA } from './extra/base'
 import { TRICKY_BASE } from './extra/tricky-base'
 import { PREMIUM_BASE } from './extra/premium-base'
 import { EXAM_GRADE_BASE } from './extra/exam-grade-base'
+import { EXPANSION_BASE } from './extra/expansion-base'
 import { BASE_UPGRADES } from './upgrade/base-upgrades'
 import { applyMcqUpgrades } from '../lib/mergeUpgrades'
 import { applyKoPatches } from '../lib/applyKoPatches'
@@ -1070,7 +1071,7 @@ export const BASE_CERT: CertData = {
   topics: TOPICS,
   questions: applyKoPatches(
     applyMcqUpgrades(
-      [...QUESTIONS, ...BASE_EXTRA, ...TRICKY_BASE, ...PREMIUM_BASE, ...EXAM_GRADE_BASE],
+      [...QUESTIONS, ...BASE_EXTRA, ...TRICKY_BASE, ...PREMIUM_BASE, ...EXAM_GRADE_BASE, ...EXPANSION_BASE],
       BASE_UPGRADES
     ),
     KO_PATCHES_BASE

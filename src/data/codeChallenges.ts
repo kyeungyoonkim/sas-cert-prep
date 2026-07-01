@@ -2,6 +2,9 @@ import type { CertId } from './types'
 import { CODE_BASE_EXTRA } from './extra/code-base'
 import { CODE_CLINICAL_EXTRA } from './extra/code-clinical'
 import { CODE_ADVANCED_EXTRA } from './extra/code-advanced'
+import { CODE_EXPANSION_BASE } from './extra/code-expansion-base'
+import { CODE_EXPANSION_CLINICAL } from './extra/code-expansion-clinical'
+import { CODE_EXPANSION_ADVANCED } from './extra/code-expansion-advanced'
 import { CODE_UPGRADES } from './upgrade/code-upgrades'
 import { applyCodeUpgrades } from '../lib/mergeUpgrades'
 import { applyKoPatches } from '../lib/applyKoPatches'
@@ -957,6 +960,9 @@ run;`,
   ...CODE_BASE_EXTRA,
   ...CODE_CLINICAL_EXTRA,
   ...CODE_ADVANCED_EXTRA,
+  ...CODE_EXPANSION_BASE,
+  ...CODE_EXPANSION_CLINICAL,
+  ...CODE_EXPANSION_ADVANCED,
 ]
 
 export const CODE_CHALLENGES = applyKoPatches(

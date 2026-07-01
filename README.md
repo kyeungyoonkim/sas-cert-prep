@@ -10,6 +10,8 @@ SAS 자격증 3종 연습 웹사이트 — Base → Clinical → Advanced 로드
 | **Clinical** Trials Programming | A00-282 | 29문제 | 65문제 / 110분 | 68% |
 | **Advanced** Programming Professional | A00-232 | 26문제 | 15문제 / 125분 | 725점 |
 
+**연습 문제은행:** Base 190문항 · Clinical 93문항 · Advanced 88문항 (MCQ + 코드 실행 챌린지, 총 371문항)
+
 사이드바 **자격증 선택**에서 Base / Clinical / Advanced를 전환하면 문제, 체크리스트, 모의고사, 진도가 각각 분리됩니다.
 
 ## 기능

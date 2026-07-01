@@ -1,6 +1,7 @@
 import type { CertData, TopicInfo } from './types'
 import { CLINICAL_EXTRA } from './extra/clinical'
 import { EXAM_GRADE_CLINICAL } from './extra/exam-grade-clinical'
+import { EXPANSION_CLINICAL } from './extra/expansion-clinical'
 import { CLINICAL_UPGRADES } from './upgrade/clinical-upgrades'
 import { applyMcqUpgrades } from '../lib/mergeUpgrades'
 import { applyKoPatches } from '../lib/applyKoPatches'
@@ -570,7 +571,7 @@ export const CLINICAL_CERT: CertData = {
   topics: TOPICS,
   questions: applyKoPatches(
     applyMcqUpgrades(
-      [...QUESTIONS, ...CLINICAL_EXTRA, ...EXAM_GRADE_CLINICAL],
+      [...QUESTIONS, ...CLINICAL_EXTRA, ...EXAM_GRADE_CLINICAL, ...EXPANSION_CLINICAL],
       CLINICAL_UPGRADES
     ),
     KO_PATCHES_CLINICAL
