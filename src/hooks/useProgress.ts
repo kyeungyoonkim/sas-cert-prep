@@ -24,8 +24,9 @@ interface StoredProgress {
   lastStudyDate: string | null
 }
 
-const STORAGE_KEY = 'sas-cert-progress-v2'
-const LEGACY_KEY = 'sas-cert-progress'
+// Bump this version to reset all stored progress on next load (fresh start).
+const STORAGE_KEY = 'sas-cert-progress-v3'
+const LEGACY_KEYS = ['sas-cert-progress-v2', 'sas-cert-progress']
 
 const emptyProgress = (): Progress => ({
   answered: {},
@@ -44,27 +45,13 @@ const defaultStored: StoredProgress = {
   lastStudyDate: null,
 }
 
-function migrateLegacy(): StoredProgress | null {
+// Remove progress saved under previous storage keys so a version bump yields a
+// genuinely clean slate instead of migrating stale (test) data forward.
+function clearLegacy(): void {
   try {
-    const raw = localStorage.getItem(LEGACY_KEY)
-    if (!raw) return null
-    const legacy = JSON.parse(raw)
-    const stored = { ...defaultStored }
-    stored.byCert.base = {
-      answered: legacy.answered ?? {},
-      bookmarked: legacy.bookmarked ?? [],
-      checklist: legacy.checklist ?? {},
-      examHistory: (legacy.examHistory ?? []).map((e: ExamResult) => ({
-        ...e,
-        topicBreakdown: e.topicBreakdown ?? {},
-      })),
-    }
-    stored.streak = legacy.streak ?? 0
-    stored.lastStudyDate = legacy.lastStudyDate ?? null
-    localStorage.removeItem(LEGACY_KEY)
-    return stored
+    for (const key of LEGACY_KEYS) localStorage.removeItem(key)
   } catch {
-    return null
+    /* ignore */
   }
 }
 
@@ -85,7 +72,8 @@ function loadStored(): StoredProgress {
   } catch {
     /* ignore */
   }
-  return migrateLegacy() ?? defaultStored
+  clearLegacy()
+  return defaultStored
 }
 
 export function useProgress(certId: CertId) {
