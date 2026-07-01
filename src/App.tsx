@@ -7,7 +7,6 @@ import {
   saveSelectedCert,
   getBankProblems,
   buildExamSet,
-  shuffleBank,
   bankStats,
   type CertId,
   type CertData,
@@ -19,22 +18,15 @@ import { CodeChallenges } from './components/CodeChallenges'
 import { ProblemBank } from './components/ProblemBank'
 import { CodeProblemPanel } from './components/CodeProblemPanel'
 import { StudyPathView } from './components/StudyPathView'
+import { StudyMode, type StudySession } from './components/StudyMode'
+import { QuestionCard } from './components/QuestionCard'
 import { useProgress } from './hooks/useProgress'
 import { calculateReadiness, getDailyProgress } from './lib/readiness'
-import { getStudyPath, getNextModule } from './data/studyPath'
+import { getNextModule } from './data/studyPath'
 import { STRINGS, formatScore } from './i18n/strings'
 import './App.css'
 
 type View = 'dashboard' | 'path' | 'bank' | 'study' | 'exam' | 'review' | 'flashcard' | 'bookmarks' | 'checklist' | 'codelab' | 'codechallenges'
-
-interface StudySession {
-  questionIds?: string[]
-  topic?: string | 'all' | 'wrong'
-  title?: string
-  collection?: string
-  moduleId?: string
-  showConcept?: boolean
-}
 
 function bankToQuestion(p: BankProblem): Question {
   return {
@@ -577,227 +569,6 @@ function DashboardReadinessBar({ label, value }: { label: string; value: number 
   )
 }
 
-/* ─── Study Mode ─── */
-function StudyMode({
-  cert,
-  session,
-  progress,
-  onRecordAnswer,
-  onToggleBookmark,
-  onOpenLab,
-  onBack,
-}: {
-  cert: CertData
-  session: StudySession
-  progress: ReturnType<typeof useProgress>['progress']
-  onRecordAnswer: (id: string, correct: boolean) => void
-  onToggleBookmark: (id: string) => void
-  onOpenLab?: (code: string) => void
-  onBack: () => void
-}) {
-  const S = STRINGS
-  const { topics } = cert
-  const bank = useMemo(() => getBankProblems(cert.id), [cert.id])
-
-  const [problemList, setProblemList] = useState<BankProblem[]>([])
-  const [index, setIndex] = useState(0)
-  const [selected, setSelected] = useState<number | null>(null)
-  const [showResult, setShowResult] = useState(false)
-  const [conceptDismissed, setConceptDismissed] = useState(!session.showConcept)
-
-  const pathModule = useMemo(() => {
-    if (!session.moduleId) return null
-    return getStudyPath(cert.id).find((m) => m.id === session.moduleId) ?? null
-  }, [session.moduleId, cert.id])
-
-  useEffect(() => {
-    setConceptDismissed(!session.showConcept)
-  }, [session.moduleId, session.showConcept])
-
-  useEffect(() => {
-    let qs: BankProblem[]
-    if (session.questionIds?.length) {
-      const map = new Map(bank.map((q) => [q.id, q]))
-      qs = session.questionIds.map((id) => map.get(id)).filter(Boolean) as BankProblem[]
-    } else if (session.topic === 'wrong') {
-      qs = bank.filter((q) => progress.answered[q.id] && !progress.answered[q.id].correct)
-    } else if (session.topic && session.topic !== 'all') {
-      qs = bank.filter((q) => q.topic === session.topic)
-    } else {
-      qs = [...bank]
-    }
-    setProblemList(shuffleBank(qs))
-    setIndex(0)
-    setSelected(null)
-    setShowResult(false)
-  }, [session, cert.id, bank, progress.answered])
-
-  if (!conceptDismissed && pathModule) {
-    const SP = STRINGS.studyPath
-    return (
-      <>
-        <div className="page-header">
-          <div className="mode-banner mode-banner--study">{pathModule.title}</div>
-          <h2>{SP.conceptBanner}</h2>
-        </div>
-        <div className="concept-panel">
-          <div className="module-concepts">
-            <h4>{SP.keyConcepts}</h4>
-            <ul>
-              {pathModule.concepts.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="module-coach-tip">
-            <strong>💡 {SP.coachTip}</strong>
-            <p>{pathModule.coachingTip}</p>
-          </div>
-          <div className="concept-panel-actions">
-            <button type="button" className="btn btn-secondary" onClick={onBack}>← {S.study.back}</button>
-            <button type="button" className="btn btn-primary" onClick={() => setConceptDismissed(true)}>
-              {SP.startQuiz} →
-            </button>
-          </div>
-        </div>
-      </>
-    )
-  }
-
-  const reshuffle = () => {
-    setProblemList(shuffleBank([...problemList]))
-    setIndex(0)
-    setSelected(null)
-    setShowResult(false)
-  }
-
-  if (problemList.length === 0) {
-    return (
-      <>
-        <div className="page-header">
-          <h2>{session.title ?? S.modes.study.title}</h2>
-        </div>
-        <div className="empty-state">
-          <div className="icon">🎉</div>
-          <p>{session.topic === 'wrong' ? S.study.noMissed : S.study.noResults}</p>
-          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={onBack}>
-            {S.study.back}
-          </button>
-        </div>
-      </>
-    )
-  }
-
-  const p = problemList[index]
-  const isBookmarked = progress.bookmarked.includes(p.id)
-  const title =
-    session.title ??
-    (session.topic === 'wrong'
-      ? S.modes.review.title
-      : session.topic && session.topic !== 'all'
-        ? topics[session.topic]?.label
-        : S.modes.study.title)
-
-  const handleSelect = (optIdx: number) => {
-    if (showResult) return
-    setSelected(optIdx)
-    setShowResult(true)
-    onRecordAnswer(p.id, optIdx === p.correctIndex)
-  }
-
-  const handleNext = () => {
-    if (index < problemList.length - 1) {
-      setIndex(index + 1)
-      setSelected(null)
-      setShowResult(false)
-    }
-  }
-
-  return (
-    <>
-      <div className="page-header">
-        <div className="mode-banner mode-banner--study">{S.modes.study.title}</div>
-        {p.kind === 'code' && <div className="mode-banner mode-banner--code">{S.codeChallenges.badge}</div>}
-        <h2>{title}</h2>
-        <p>
-          {index + 1} / {problemList.length}
-          <button className="btn btn-ghost" onClick={reshuffle} style={{ marginLeft: 12 }}>
-            🔀 {S.study.shuffle}
-          </button>
-        </p>
-      </div>
-
-      <div className="quiz-container">
-        {(p.coachingTip || pathModule?.coachingTip) && !showResult && (
-          <div className="question-coach-tip">
-            💡 <span>{p.coachingTip ?? pathModule?.coachingTip}</span>
-          </div>
-        )}
-        {p.kind === 'code' ? (
-          <div className="question-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className={`badge ${p.difficulty}`}>{diffLabel(p.difficulty)}</span>
-                <span className="bank-id">{p.id}</span>
-                <span className="kind-badge kind-badge--code">▶ Run</span>
-              </div>
-              <button className="btn btn-ghost" onClick={() => onToggleBookmark(p.id)}>
-                {isBookmarked ? '⭐' : '☆'}
-              </button>
-            </div>
-            <div className="question-text">{p.question}</div>
-            <CodeProblemPanel
-              problem={p}
-              selected={selected}
-              showResult={showResult}
-              onSelect={handleSelect}
-            />
-            {showResult && (
-              <div className="explanation">
-                <h4>💡 {S.study.explanation}</h4>
-                <p>{p.explanation}</p>
-                {p.explanationKo && (
-                  <div className="explanation-ko">
-                    <h5>{S.study.explanationKo}</h5>
-                    <p>{p.explanationKo}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <QuestionCard
-            cert={cert}
-            question={bankToQuestion(p)}
-            selected={selected}
-            showResult={showResult}
-            onSelect={handleSelect}
-            isBookmarked={isBookmarked}
-            onToggleBookmark={() => onToggleBookmark(p.id)}
-            onTryInLab={p.code && onOpenLab ? () => onOpenLab(wrapCodeForLab(p.code!)) : undefined}
-          />
-        )}
-        <div className="quiz-actions">
-          <button className="btn btn-secondary" onClick={onBack}>← {S.study.back}</button>
-          {showResult && index < problemList.length - 1 && (
-            <button className="btn btn-primary" onClick={handleNext}>{S.study.next} →</button>
-          )}
-          {showResult && index === problemList.length - 1 && (
-            <button className="btn btn-primary" onClick={onBack}>{S.study.done}</button>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
-
-function wrapCodeForLab(snippet: string): string {
-  if (/^\s*data\s+/im.test(snippet) || /^\s*proc\s+/im.test(snippet)) {
-    return snippet.includes('run;') ? snippet : `${snippet}\nrun;`
-  }
-  return `/* Practice snippet */\n${snippet}\nrun;`
-}
-
 /* ─── Practice Exam Mode ─── */
 function ExamMode({
   cert,
@@ -1017,107 +788,6 @@ function ExamMode({
         </div>
       </div>
     </>
-  )
-}
-
-/* ─── Question Card ─── */
-function QuestionCard({
-  cert,
-  question,
-  selected,
-  showResult,
-  onSelect,
-  isBookmarked,
-  onToggleBookmark,
-  hideExplanation,
-  onTryInLab,
-}: {
-  cert: CertData
-  question: Question
-  selected: number | null
-  showResult: boolean
-  onSelect: (idx: number) => void
-  isBookmarked: boolean
-  onToggleBookmark: () => void
-  hideExplanation?: boolean
-  onTryInLab?: () => void
-}) {
-  const S = STRINGS
-  const letters = ['A', 'B', 'C', 'D']
-  const topicInfo = cert.topics[question.topic]
-  const paragraphs = question.question.split('\n\n')
-
-  return (
-    <div className="question-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {question.title && <span className="question-title">{question.title}</span>}
-          <span className={`badge ${question.difficulty}`}>{diffLabel(question.difficulty)}</span>
-          {question.examStyle && <span className="badge exam-style-badge">Exam</span>}
-          {topicInfo && (
-            <span className="badge" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)' }}>
-              {topicInfo.label}
-            </span>
-          )}
-        </div>
-        <button className="btn btn-ghost" onClick={onToggleBookmark}>
-          {isBookmarked ? '⭐' : '☆'}
-        </button>
-      </div>
-
-      <div className="question-text">
-        {paragraphs.map((para, i) => (
-          <p key={i} className={i < paragraphs.length - 1 ? 'question-scenario' : 'question-prompt'}>
-            {para}
-          </p>
-        ))}
-      </div>
-
-      {question.code && (
-        <div className="code-block">
-          <pre>{question.code}</pre>
-        </div>
-      )}
-
-      {question.code && onTryInLab && (
-        <button className="btn btn-secondary btn-sm try-lab-btn" onClick={onTryInLab}>
-          💻 {STRINGS.codeLab.tryInLab}
-        </button>
-      )}
-
-      <div className="options">
-        {question.options.map((opt, i) => {
-          let className = 'option'
-          if (selected === i) className += ' selected'
-          if (showResult) {
-            if (i === question.correctIndex) className += ' correct'
-            else if (selected === i) className += ' incorrect'
-          }
-          return (
-            <button key={i} className={className} onClick={() => onSelect(i)} disabled={showResult}>
-              <span className="option-letter">{letters[i]}</span>
-              <span>{opt}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      {showResult && !hideExplanation && (
-        <div className="explanation">
-          <h4>💡 {S.study.explanation}</h4>
-          <p>{question.explanation}</p>
-          {question.explanationKo && (
-            <div className="explanation-ko">
-              <h5>{S.study.explanationKo}</h5>
-              <p>{question.explanationKo}</p>
-            </div>
-          )}
-          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-            {S.study.tags}: {question.tags.join(', ')}
-          </div>
-        </div>
-      )}
-    </div>
   )
 }
 
