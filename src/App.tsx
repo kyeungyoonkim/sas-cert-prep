@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react'
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react'
 import {
   getCert,
   CERT_ORDER,
@@ -14,16 +14,32 @@ import {
   type Question,
   type BankProblem,
 } from './data'
-import { CodeLab } from './components/CodeLab'
-import { CodeChallenges } from './components/CodeChallenges'
-import { ProblemBank } from './components/ProblemBank'
 import { CodeProblemPanel } from './components/CodeProblemPanel'
-import { StudyPathView } from './components/StudyPathView'
 import { useProgress } from './hooks/useProgress'
 import { calculateReadiness, getDailyProgress } from './lib/readiness'
 import { getStudyPath, getNextModule } from './data/studyPath'
 import { STRINGS, formatScore } from './i18n/strings'
 import './App.css'
+
+const CodeLab = lazy(async () => {
+  const module = await import('./components/CodeLab')
+  return { default: module.CodeLab }
+})
+
+const CodeChallenges = lazy(async () => {
+  const module = await import('./components/CodeChallenges')
+  return { default: module.CodeChallenges }
+})
+
+const ProblemBank = lazy(async () => {
+  const module = await import('./components/ProblemBank')
+  return { default: module.ProblemBank }
+})
+
+const StudyPathView = lazy(async () => {
+  const module = await import('./components/StudyPathView')
+  return { default: module.StudyPathView }
+})
 
 type View = 'dashboard' | 'path' | 'bank' | 'study' | 'exam' | 'review' | 'flashcard' | 'bookmarks' | 'checklist' | 'codelab' | 'codechallenges'
 
@@ -79,6 +95,15 @@ function calcExamScore(correct: number, total: number, certId: CertId): number {
 
 function diffLabel(d: Question['difficulty']): string {
   return STRINGS.difficulty[d]
+}
+
+function ViewFallback() {
+  return (
+    <div className="empty-state">
+      <div className="icon">⏳</div>
+      <p>Loading view...</p>
+    </div>
+  )
 }
 
 export default function App() {
@@ -207,6 +232,7 @@ export default function App() {
       </aside>
 
       <main className="main">
+        <Suspense fallback={<ViewFallback />}>
         {view === 'dashboard' && (
           <Dashboard
             cert={cert}
@@ -296,6 +322,7 @@ export default function App() {
             onBack={() => setView('dashboard')}
           />
         )}
+        </Suspense>
       </main>
     </div>
   )
