@@ -1,5 +1,6 @@
 import type { CertData, Question } from '../data/types'
 import { STRINGS } from '../i18n/strings'
+import { AnswerReveal } from './AnswerReveal'
 
 function diffLabel(d: Question['difficulty']): string {
   return STRINGS.difficulty[d]
@@ -85,6 +86,14 @@ export function QuestionCard({
           )
         })}
       </div>
+
+      {showResult && (
+        <AnswerReveal
+          options={question.options}
+          correctIndex={question.correctIndex}
+          selected={selected}
+        />
+      )}
 
       {showResult && !hideExplanation && (
         <div className="explanation">

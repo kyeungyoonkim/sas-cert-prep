@@ -11,6 +11,7 @@ import type { useProgress } from '../hooks/useProgress'
 import { STRINGS } from '../i18n/strings'
 import { CodeProblemPanel } from './CodeProblemPanel'
 import { QuestionCard } from './QuestionCard'
+import { AnswerReveal } from './AnswerReveal'
 
 export interface StudySession {
   questionIds?: string[]
@@ -93,7 +94,6 @@ export function StudyMode({
   const S = STRINGS
   const { topics } = cert
   const bank = useMemo(() => getBankProblems(cert.id), [cert.id])
-  const letters = ['A', 'B', 'C', 'D']
 
   const sourcePool = useMemo(
     () => buildStudyPool(session, bank, progress.answered),
@@ -442,22 +442,6 @@ export function StudyMode({
           </div>
         )}
 
-        {showResult && (
-          <div className={`study-feedback ${isCorrect ? 'study-feedback--correct' : 'study-feedback--incorrect'}`}>
-            <div className="study-feedback-title">
-              {isCorrect ? `✓ ${S.study.correct}` : `✗ ${S.study.incorrect}`}
-            </div>
-            {!isCorrect && (
-              <div className="study-feedback-answer">
-                {S.study.correctAnswer}: <strong>{letters[p.correctIndex]}</strong>
-                {' — '}
-                {p.options[p.correctIndex]}
-              </div>
-            )}
-            <p className="study-feedback-hint">{S.study.reviewExplanation}</p>
-          </div>
-        )}
-
         {p.kind === 'code' ? (
           <div className="question-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -477,6 +461,13 @@ export function StudyMode({
               showResult={showResult}
               onSelect={handleSelect}
             />
+            {showResult && (
+              <AnswerReveal
+                options={p.options}
+                correctIndex={p.correctIndex}
+                selected={selected}
+              />
+            )}
             {showResult && (
               <div className="explanation">
                 <h4>💡 {S.study.explanation}</h4>
@@ -513,9 +504,14 @@ export function StudyMode({
                 🔄 {S.study.retry}
               </button>
             )}
-            {showResult && (
+            {showResult && isCorrect && (
               <button type="button" className="btn btn-primary" onClick={handleNext}>
                 {index < problemList.length - 1 ? `${S.study.next} →` : S.study.done}
+              </button>
+            )}
+            {showResult && !isCorrect && (
+              <button type="button" className="btn btn-primary" onClick={handleNext}>
+                {index < problemList.length - 1 ? S.study.continueAfterReview : S.study.done}
               </button>
             )}
           </div>

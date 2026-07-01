@@ -20,6 +20,7 @@ import { CodeProblemPanel } from './components/CodeProblemPanel'
 import { StudyPathView } from './components/StudyPathView'
 import { StudyMode, type StudySession } from './components/StudyMode'
 import { QuestionCard } from './components/QuestionCard'
+import { AnswerReveal } from './components/AnswerReveal'
 import { useProgress } from './hooks/useProgress'
 import { calculateReadiness, getDailyProgress } from './lib/readiness'
 import { getNextModule } from './data/studyPath'
@@ -924,6 +925,7 @@ function BookmarkView({
   }
 
   const p = bookmarkedProblems[index]
+  const isCorrect = selected !== null && selected === p.correctIndex
 
   return (
     <>
@@ -958,6 +960,13 @@ function BookmarkView({
               }}
             />
             {showResult && (
+              <AnswerReveal
+                options={p.options}
+                correctIndex={p.correctIndex}
+                selected={selected}
+              />
+            )}
+            {showResult && (
               <div className="explanation">
                 <h4>💡 {S.study.explanation}</h4>
                 <p>{p.explanation}</p>
@@ -990,14 +999,24 @@ function BookmarkView({
         )}
         <div className="quiz-actions">
           <button className="btn btn-secondary" onClick={onBack}>← {S.study.back}</button>
-          {index < bookmarkedProblems.length - 1 && showResult && (
-            <button
-              className="btn btn-primary"
-              onClick={() => { setIndex(index + 1); setSelected(null); setShowResult(false) }}
-            >
-              {S.study.next} →
-            </button>
-          )}
+          <div className="quiz-actions-right">
+            {showResult && !isCorrect && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => { setSelected(null); setShowResult(false) }}
+              >
+                🔄 {S.study.retry}
+              </button>
+            )}
+            {showResult && index < bookmarkedProblems.length - 1 && (
+              <button
+                className="btn btn-primary"
+                onClick={() => { setIndex(index + 1); setSelected(null); setShowResult(false) }}
+              >
+                {isCorrect ? `${S.study.next} →` : S.study.continueAfterReview}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>
