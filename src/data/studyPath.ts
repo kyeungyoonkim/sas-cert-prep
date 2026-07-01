@@ -50,7 +50,10 @@ export const BASE_STUDY_PATH: StudyModule[] = [
       'SAS dates from 01JAN1960',
     ],
     coachingTip: 'Domain 1 is ~25% of exam — know library + access before MERGE.',
-    problemIds: ['eg-b-01', 'eg-b-02', 'eg-b-03', 'eg-b-18', 'ds-01', 'ds-02', 'ds-05', 'ds-07', 'ds-11', 'ex-ds-01', 'cc-b-01', 'cc-b-20'],
+    problemIds: [
+      'eg-b-01', 'eg-b-02', 'eg-b-03', 'eg-b-18', 'ds-01', 'ds-02', 'ds-03', 'ds-05', 'ds-07', 'ds-11', 'ds-12',
+      'ex-ds-01', 'ex-ds-02', 'ex-ds-04', 'ex-ds-05', 'cc-b-01', 'cc-b-20',
+    ],
     completionThreshold: 70,
   },
   {
@@ -70,8 +73,8 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     ],
     coachingTip: 'MERGE non-matches stay — count the larger side, not matches only.',
     problemIds: [
-      'eg-b-10', 'eg-b-14', 'ds-04', 'ds-06', 'ds-08', 'ds-09', 'ds-10', 'ex-ds-03',
-      'trap-b-01', 'trap-b-06', 'mx-02', 'cc-b-02', 'cc-b-03', 'cc-b-16', 'cc-b-19', 'cc-b-21', 'cc-b-25', 'cc-b-33',
+      'eg-b-10', 'eg-b-14', 'ds-04', 'ds-06', 'ds-08', 'ds-09', 'ds-10', 'ex-ds-03', 'mx-06',
+      'trap-b-01', 'trap-b-06', 'mx-02', 'cc-b-02', 'cc-b-03', 'cc-b-16', 'cc-b-19', 'cc-b-21', 'cc-b-25', 'cc-b-29', 'cc-b-33',
     ],
     completionThreshold: 75,
   },
@@ -94,9 +97,10 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     coachingTip: 'Largest domain — functions + DO loops appear on almost every exam.',
     problemIds: [
       'eg-b-04', 'eg-b-05', 'eg-b-06', 'eg-b-09', 'eg-b-11', 'eg-b-16',
-      'md-01', 'md-02', 'md-03', 'md-04', 'md-05', 'md-06', 'md-07', 'md-10', 'md-11', 'md-14',
-      'trap-b-02', 'trap-b-03', 'trap-b-04', 'trap-b-05', 'mx-01', 'mx-05',
-      'cc-b-04', 'cc-b-06', 'cc-b-17', 'cc-b-18', 'cc-b-22', 'cc-b-23', 'cc-b-26', 'cc-b-27', 'cc-b-34', 'cc-b-38',
+      'md-01', 'md-02', 'md-03', 'md-04', 'md-05', 'md-06', 'md-07', 'md-10', 'md-11', 'md-13', 'md-14',
+      'trap-b-02', 'trap-b-03', 'trap-b-04', 'trap-b-05', 'mx-01', 'mx-05', 'mx-07', 'mx-10',
+      'ex-md-01', 'ex-md-03', 'ex-md-04', 'ex-md-05', 'ex-md-07',
+      'cc-b-04', 'cc-b-06', 'cc-b-07', 'cc-b-17', 'cc-b-18', 'cc-b-22', 'cc-b-23', 'cc-b-26', 'cc-b-27', 'cc-b-34', 'cc-b-38',
     ],
     completionThreshold: 75,
   },
@@ -118,6 +122,7 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     coachingTip: 'LAST.row cumulative total on SUM — not the same as assignment.',
     problemIds: [
       'eg-b-12', 'eg-b-17', 'md-08', 'md-09', 'md-12', 'md-15', 'trap-b-04', 'trap-b-14',
+      'ex-md-02', 'ex-md-06', 'ex-rp-04',
       'rp-06', 'cc-b-05', 'cc-b-24', 'cc-b-31', 'cc-b-32',
     ],
     completionThreshold: 75,
@@ -140,8 +145,8 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     ],
     coachingTip: 'Read Log NOTE observation counts — always verify after ERROR.',
     problemIds: [
-      'eg-b-15', 'eh-01', 'eh-02', 'eh-03', 'eh-04', 'eh-05', 'eh-06', 'eh-07', 'eh-08', 'eh-09', 'eh-10',
-      'ex-eh-01', 'ex-eh-02', 'ex-eh-03', 'mx-03', 'trap-b-07', 'trap-b-08', 'cc-b-08',
+      'eg-b-07', 'eg-b-15', 'eh-01', 'eh-02', 'eh-03', 'eh-04', 'eh-05', 'eh-06', 'eh-07', 'eh-08', 'eh-09', 'eh-10',
+      'ex-eh-01', 'ex-eh-02', 'ex-eh-03', 'mx-03', 'mx-08', 'trap-b-07', 'trap-b-08', 'cc-b-08',
     ],
     completionThreshold: 70,
   },
@@ -164,7 +169,7 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     coachingTip: 'PROC questions test output structure — rows vs summary table.',
     problemIds: [
       'eg-b-08', 'eg-b-13', 'rp-01', 'rp-02', 'rp-03', 'rp-04', 'rp-05', 'rp-07', 'rp-08', 'rp-09', 'rp-10', 'rp-11', 'rp-12',
-      'trap-b-13', 'mx-04', 'cc-b-09', 'cc-b-10',
+      'trap-b-13', 'mx-04', 'mx-09', 'ex-rp-01', 'ex-rp-02', 'ex-rp-03', 'ex-rp-05', 'cc-b-09', 'cc-b-10', 'cc-b-36',
     ],
     completionThreshold: 70,
   },
@@ -179,7 +184,7 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     concepts: ['MERGE counts', 'Missing in IF', 'SUM vs =', 'Character padding'],
     coachingTip: 'Repeat this module until traps are instant.',
     problemIds: [
-      'trap-b-01', 'trap-b-02', 'trap-b-04', 'trap-b-06', 'trap-b-11', 'trap-b-12',
+      'trap-b-01', 'trap-b-02', 'trap-b-04', 'trap-b-06', 'trap-b-09', 'trap-b-10', 'trap-b-11', 'trap-b-12', 'trap-b-15',
       'prem-b-08', 'cc-b-16', 'cc-b-38', 'mx-05',
     ],
     completionThreshold: 80,
@@ -211,8 +216,8 @@ export const BASE_STUDY_PATH: StudyModule[] = [
     concepts: ['Pipeline DATA steps', 'MERGE + subset', 'PROC vs DATA step'],
     coachingTip: 'Timed practice — no hints, exam conditions.',
     problemIds: [
-      'prem-b-01', 'prem-b-02', 'prem-b-03', 'prem-b-04', 'prem-b-06',
-      'prem-b-08', 'prem-b-11', 'prem-b-12',
+      'prem-b-01', 'prem-b-02', 'prem-b-03', 'prem-b-04', 'prem-b-05', 'prem-b-06', 'prem-b-07',
+      'prem-b-08', 'prem-b-09', 'prem-b-10', 'prem-b-11', 'prem-b-12',
     ],
     completionThreshold: 75,
   },
