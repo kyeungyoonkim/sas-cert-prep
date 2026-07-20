@@ -18,6 +18,7 @@ import { CodeChallenges } from './components/CodeChallenges'
 import { ProblemBank } from './components/ProblemBank'
 import { CodeProblemPanel } from './components/CodeProblemPanel'
 import { StudyPathView } from './components/StudyPathView'
+import { StudyPlanView } from './components/StudyPlanView'
 import { StudyMode, type StudySession } from './components/StudyMode'
 import { QuestionCard } from './components/QuestionCard'
 import { AnswerReveal } from './components/AnswerReveal'
@@ -27,7 +28,7 @@ import { getNextModule } from './data/studyPath'
 import { STRINGS, formatScore } from './i18n/strings'
 import './App.css'
 
-type View = 'dashboard' | 'path' | 'bank' | 'study' | 'exam' | 'review' | 'flashcard' | 'bookmarks' | 'checklist' | 'codelab' | 'codechallenges'
+type View = 'dashboard' | 'plan' | 'path' | 'bank' | 'study' | 'exam' | 'review' | 'flashcard' | 'bookmarks' | 'checklist' | 'codelab' | 'codechallenges'
 
 function bankToQuestion(p: BankProblem): Question {
   return {
@@ -80,7 +81,7 @@ export default function App() {
   const [studySession, setStudySession] = useState<StudySession>({ topic: 'all' })
   const [labCode, setLabCode] = useState<string | undefined>()
   const cert = getCert(certId)
-  const { progress, streak, recordAnswer, toggleBookmark, toggleChecklist, recordExam, resetProgress } =
+  const { progress, streak, recordAnswer, toggleBookmark, toggleChecklist, recordExam, resetProgress, setExamDate, togglePlanDay } =
     useProgress(certId)
 
   const handleCertChange = (id: CertId) => {
@@ -127,6 +128,7 @@ export default function App() {
 
   const navItems: { id: View; icon: string; label: string }[] = [
     { id: 'dashboard', icon: '📊', label: STRINGS.nav.dashboard },
+    { id: 'plan', icon: '🗓️', label: STRINGS.nav.studyPlan },
     { id: 'path', icon: '🎓', label: STRINGS.nav.studyPath },
     { id: 'bank', icon: '📚', label: STRINGS.nav.questionBank },
     { id: 'study', icon: '📖', label: STRINGS.nav.studyMode },
@@ -213,7 +215,21 @@ export default function App() {
             onOpenPath={() => setView('path')}
             onOpenLab={() => { setLabCode(undefined); setView('codelab') }}
             onOpenCodeChallenges={() => setView('codechallenges')}
+            onOpenPlan={() => setView('plan')}
             onReset={() => resetProgress(certId)}
+          />
+        )}
+        {view === 'plan' && (
+          <StudyPlanView
+            cert={cert}
+            progress={progress}
+            onSetExamDate={setExamDate}
+            onTogglePlanDay={togglePlanDay}
+            onStartStudy={startStudy}
+            onOpenView={(v) => {
+              if (v === 'review') setStudySession({ topic: 'wrong', title: STRINGS.modes.review.title })
+              setView(v)
+            }}
           />
         )}
         {view === 'path' && (
@@ -323,6 +339,7 @@ function Dashboard({
   onOpenPath,
   onOpenLab,
   onOpenCodeChallenges,
+  onOpenPlan,
   onReset,
 }: {
   cert: CertData
@@ -336,6 +353,7 @@ function Dashboard({
   onOpenPath: () => void
   onOpenLab: () => void
   onOpenCodeChallenges: () => void
+  onOpenPlan: () => void
   onReset: () => void
 }) {
   const { topics, examInfo, checklist } = cert
@@ -348,12 +366,34 @@ function Dashboard({
   const daily = getDailyProgress(progress.dailyLog)
   const next = useMemo(() => getNextModule(certId, progress.answered), [certId, progress.answered])
 
+  const daysUntilExam = useMemo(() => {
+    if (!progress.examDate) return null
+    const [y, m, d] = progress.examDate.split('-').map(Number)
+    const exam = new Date(y, (m ?? 1) - 1, d ?? 1)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    return Math.round((exam.getTime() - today.getTime()) / 86400000)
+  }, [progress.examDate])
+
   return (
     <>
       <div className="page-header">
         <h2>{S.dashboard.title}</h2>
         <p>{cert.fullName} {S.dashboard.subtitle}</p>
       </div>
+
+      <button type="button" className="plan-banner" onClick={onOpenPlan}>
+        <span className="plan-banner-icon">🗓️</span>
+        {daysUntilExam !== null ? (
+          <span className="plan-banner-text">
+            <strong>{daysUntilExam >= 0 ? `D-${daysUntilExam}` : STRINGS.plan.overdue}</strong>
+            {daysUntilExam >= 0 && <> · {STRINGS.plan.examOn} {progress.examDate}</>}
+          </span>
+        ) : (
+          <span className="plan-banner-text">{STRINGS.plan.subtitle}</span>
+        )}
+        <span className="plan-banner-cta">{STRINGS.nav.studyPlan} →</span>
+      </button>
 
       <div className="coach-hero coach-hero--compact">
         <div className="readiness-ring readiness-ring--sm" style={{ '--ring-color': readiness.color } as CSSProperties}>

@@ -6,6 +6,7 @@ export const STRINGS = {
 
   nav: {
     dashboard: 'Dashboard',
+    studyPlan: 'Study Plan',
     studyPath: 'Study Path',
     questionBank: 'Question Bank',
     studyMode: 'Study Mode',
@@ -16,6 +17,24 @@ export const STRINGS = {
     codeLab: 'Code Lab',
     codeChallenges: 'Code Challenges',
     checklist: 'Study Checklist',
+  },
+
+  plan: {
+    badge: 'Study Plan',
+    title: 'Day-by-Day Study Plan',
+    subtitle: 'Pick your exam date — get a dated schedule',
+    setupHint: 'Set your exam date and we build a day-by-day plan that covers every domain, then mock exams, then final review.',
+    examDateLabel: 'When is your exam?',
+    weeks: 'weeks',
+    createPlan: 'Create my plan',
+    examOn: 'Exam on',
+    overdue: 'Exam date has passed — set a new one',
+    daysDone: 'Days done',
+    contentGuide: 'Exam Content Guide',
+    changeDate: 'Change date',
+    today: 'Today',
+    markDone: 'Mark day done',
+    markUndone: 'Mark not done',
   },
 
   modes: {

@@ -8,6 +8,10 @@ export interface Progress {
   examHistory: ExamResult[]
   /** date (YYYY-MM-DD) → questions answered that day */
   dailyLog?: Record<string, number>
+  /** Target exam date (YYYY-MM-DD) for the day-by-day Study Plan */
+  examDate?: string
+  /** Study Plan day id → completed */
+  planDone?: Record<string, boolean>
 }
 
 export interface ExamResult {
@@ -201,6 +205,45 @@ export function useProgress(certId: CertId) {
     []
   )
 
+  const setExamDate = useCallback(
+    (date: string | null) => {
+      setStored((prev) => {
+        const certProgress = prev.byCert[certId] ?? emptyProgress()
+        return {
+          ...prev,
+          byCert: {
+            ...prev.byCert,
+            [certId]: {
+              ...certProgress,
+              examDate: date ?? undefined,
+              // Reset day completion when the target date changes.
+              planDone: {},
+            },
+          },
+        }
+      })
+    },
+    [certId]
+  )
+
+  const togglePlanDay = useCallback(
+    (dayId: string) => {
+      setStored((prev) => {
+        const certProgress = prev.byCert[certId] ?? emptyProgress()
+        const planDone = { ...(certProgress.planDone ?? {}) }
+        planDone[dayId] = !planDone[dayId]
+        return {
+          ...prev,
+          byCert: {
+            ...prev.byCert,
+            [certId]: { ...certProgress, planDone },
+          },
+        }
+      })
+    },
+    [certId]
+  )
+
   return {
     progress,
     streak: stored.streak,
@@ -209,5 +252,7 @@ export function useProgress(certId: CertId) {
     toggleChecklist,
     recordExam,
     resetProgress,
+    setExamDate,
+    togglePlanDay,
   }
 }
